@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PXE服务器管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand logo" href="#">
+                <i class="fas fa-server"></i>
+                PXE服务器
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="dashboard">
+                            <i class="fas fa-tachometer-alt"></i> 控制台
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="devices">
+                            <i class="fas fa-laptop"></i> 设备列表
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="control">
+                            <i class="fas fa-cog"></i> 服务控制
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="files">
+                            <i class="fas fa-file-upload"></i> 文件管理
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 控制台页面 -->
+    <div id="dashboard" class="page-content active">
+        <div class="container dashboard-section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2><i class="fas fa-tachometer-alt me-3"></i>服务器控制台</h2>
+                    <p class="text-muted">监控PXE服务器状态和设备部署情况</p>
+                </div>
+            </div>
+            
+            <!-- 顶部统计信息 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <i class="fas fa-network-wired text-primary fa-2x"></i>
+                        <div id="device-count" class="stat-value">0</div>
+                        <div class="stat-label">今日设备连接</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <i class="fas fa-check-circle text-success fa-2x"></i>
+                        <div id="success-count" class="stat-value">0</div>
+                        <div class="stat-label">成功部署</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <i class="fas fa-times-circle text-danger fa-2x"></i>
+                        <div id="failed-count" class="stat-value">0</div>
+                        <div class="stat-label">部署失败</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <i class="fas fa-sync-alt text-info fa-2x"></i>
+                        <div id="deploying-count" class="stat-value">0</div>
+                        <div class="stat-label">进行中</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 服务状态 -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">服务状态</div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="service-status">
+                                        <span id="dhcp-indicator" class="service-indicator"></span>
+                                        <div class="status-text">
+                                            <h5>DHCP服务</h5>
+                                            <p class="text-muted mb-0" id="dhcp-status">状态未知</p>
+                                        </div>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 8px;">
+                                        <div class="progress-bar" id="dhcp-progress" style="width: 0%"></div>
+                                    </div>
+                                    <button id="dhcp-control" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-stop me-1"></i>停止服务
+                                    </button>
+                                </div>
+                                
+                                <div class="col-md-6 mb-4">
+                                    <div class="service-status">
+                                        <span id="tftp-indicator" class="service-indicator"></span>
+                                        <div class="status-text">
+                                            <h5>TFTP服务</h5>
+                                            <p class="text-muted mb-0" id="tftp-status">状态未知</p>
+                                        </div>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 8px;">
+                                        <div class="progress-bar" id="tftp-progress" style="width: 0%"></div>
+                                    </div>
+                                    <button id="tftp-control" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-stop me-1"></i>停止服务
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid mt-2">
+                                <button id="all-services-control" class="btn btn-pxe btn-pxe-stop">
+                                    <i class="fas fa-power-off me-2"></i>停止所有服务
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">系统信息</div>
+                        <div class="card-body">
+                            <div class="system-info">
+                                <div class="info-item">
+                                    <span class="info-label">服务器名称</span>
+                                    <span class="info-value">pxe-main-server</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">运行时间</span>
+                                    <span class="info-value">12天 4小时</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">CPU使用率</span>
+                                    <span class="info-value" id="cpu-usage">0%</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">内存使用</span>
+                                    <span class="info-value" id="memory-usage">0%</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">存储空间</span>
+                                    <span class="info-value" id="storage-usage">0%</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">系统版本</span>
+                                    <span class="info-value">PXE Server v2.1.0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 活动设备 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>活动设备</span>
+                            <div>
+                                <button class="btn btn-sm btn-light me-2" id="refresh-devices">
+                                    <i class="fas fa-sync-alt me-1"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-header">
+                                        <tr>
+                                            <th>MAC地址</th>
+                                            <th>状态</th>
+                                            <th>进度</th>
+                                            <th>镜像</th>
+                                            <th>IP地址</th>
+                                            <th>持续时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="active-devices">
+                                        <!-- 动态填充 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 设备列表页面 -->
+    <div id="devices" class="page-content">
+        <div class="container dashboard-section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2><i class="fas fa-laptop me-3"></i>PXE设备列表</h2>
+                    <p class="text-muted">所有通过PXE启动的设备历史记录</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>设备历史记录</span>
+                            <div>
+                                <button class="btn btn-sm btn-light me-2" id="refresh-all-devices">
+                                    <i class="fas fa-sync-alt me-1"></i> 刷新
+                                </button>
+                                <button class="btn btn-sm btn-light">
+                                    <i class="fas fa-download me-1"></i> 导出
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-header">
+                                        <tr>
+                                            <th>MAC地址</th>
+                                            <th>状态</th>
+                                            <th>进度</th>
+                                            <th>镜像</th>
+                                            <th>最后活跃</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="all-devices">
+                                        <!-- 动态填充 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 服务控制页面 -->
+    <div id="control" class="page-content">
+        <div class="container dashboard-section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2><i class="fas fa-cogs me-3"></i>服务控制面板</h2>
+                    <p class="text-muted">管理PXE相关服务状态</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            服务控制
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="card service-card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="card-title mb-0">
+                                                    <i class="fas fa-bolt me-2 text-primary"></i>DHCP服务
+                                                </h5>
+                                                <span id="control-dhcp-indicator" class="service-indicator"></span>
+                                            </div>
+                                            <p class="card-text text-muted">动态主机配置协议服务，负责为PXE设备分配IP地址。</p>
+                                            <div class="d-flex mt-4">
+                                                <button id="control-dhcp-btn" class="btn btn-pxe-stop me-2">
+                                                    <i class="fas fa-stop me-1"></i> 停止服务
+                                                </button>
+                                                <button class="btn btn-outline-secondary">
+                                                    <i class="fas fa-cog me-1"></i> 配置
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-4">
+                                    <div class="card service-card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="card-title mb-0">
+                                                    <i class="fas fa-file-arrow-down me-2 text-primary"></i>TFTP服务
+                                                </h5>
+                                                <span id="control-tftp-indicator" class="service-indicator"></span>
+                                            </div>
+                                            <p class="card-text text-muted">简单文件传输协议服务，负责传输PXE启动文件和镜像。</p>
+                                            <div class="d-flex mt-4">
+                                                <button id="control-tftp-btn" class="btn btn-pxe-stop me-2">
+                                                    <i class="fas fa-stop me-1"></i> 停止服务
+                                                </button>
+                                                <button class="btn btn-outline-secondary">
+                                                    <i class="fas fa-cog me-1"></i> 配置
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid mt-2">
+                                <button id="control-all-btn" class="btn btn-pxe btn-pxe-stop">
+                                    <i class="fas fa-power-off me-2"></i>停止所有PXE服务
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            服务日志
+                        </div>
+                        <div class="card-body">
+                            <div id="service-logs" style="max-height: 300px; overflow-y: auto;">
+                                <!-- 动态填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 文件管理页面 -->
+    <div id="files" class="page-content">
+        <div class="container dashboard-section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2><i class="fas fa-file-upload me-3"></i>文件管理</h2>
+                    <p class="text-muted">上传和管理PXE配置文件及系统镜像</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            上传配置文件
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-area" id="configUploadArea">
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-code"></i>
+                                </div>
+                                <h5>上传配置文件</h5>
+                                <p class="text-muted">拖放文件到此处或点击上传</p>
+                                <input type="file" class="d-none" id="configFile" accept=".cfg,.conf,.ini">
+                                <button class="btn btn-pxe mt-2" onclick="document.getElementById('configFile').click()">
+                                    <i class="fas fa-upload me-1"></i> 选择文件
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h5>配置文件列表</h5>
+                                <ul id="config-file-list" class="list-group">
+                                    <!-- 动态填充 -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            上传系统镜像
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-area" id="imageUploadArea">
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-archive"></i>
+                                </div>
+                                <h5>上传系统镜像</h5>
+                                <p class="text-muted">支持ISO、IMG等格式</p>
+                                <input type="file" class="d-none" id="imageFile" accept=".iso,.img,.gz">
+                                <button class="btn btn-pxe mt-2" onclick="document.getElementById('imageFile').click()">
+                                    <i class="fas fa-upload me-1"></i> 选择文件
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h5>系统镜像列表</h5>
+                                <ul id="image-file-list" class="list-group">
+                                    <!-- 动态填充 -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-2">PXE服务器管理系统</h5>
+                    <p class="small mb-0">基于Python实现的轻量级PXE服务器解决方案，提供DHCP和TFTP服务。</p>
+                </div>
+                <div class="col-md-3">
+                    <h5 class="mb-2">服务状态</h5>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-1"><span id="footer-dhcp-indicator" class="service-indicator me-2"></span>DHCP服务: <span id="footer-dhcp-status">未知</span></li>
+                        <li class="mb-1"><span id="footer-tftp-indicator" class="service-indicator me-2"></span>TFTP服务: <span id="footer-tftp-status">未知</span></li>
+                        <li class="mb-1"><span class="service-indicator service-on me-2"></span>Web服务: 运行中</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5 class="mb-2">系统信息</h5>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-1"><i class="fas fa-microchip me-2"></i>CPU: <span id="footer-cpu">0%</span></li>
+                        <li class="mb-1"><i class="fas fa-memory me-2"></i>内存: <span id="footer-memory">0%</span></li>
+                        <li class="mb-1"><i class="fas fa-hdd me-2"></i>存储: <span id="footer-storage">0%</span></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-2">
+            <div class="text-center">
+                <p class="mb-0 small">© 2023 PXE服务器管理系统 | 版本 2.1.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

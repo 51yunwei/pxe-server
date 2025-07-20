@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PXE控制面板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">PXE控制面板</h1>
+        
+        <div class="row">
+            <!-- 服务控制 -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">服务状态</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h5>DHCP服务: 
+                                <span class="badge {% if dhcp_running %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if dhcp_running %}运行中{% else %}已停止{% endif %}
+                                </span>
+                            </h5>
+                        </div>
+                        <div class="mb-3">
+                            <h5>TFTP服务: 
+                                <span class="badge {% if tftp_running %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if tftp_running %}运行中{% else %}已停止{% endif %}
+                                </span>
+                            </h5>
+                        </div>
+                        
+                        <form method="post">
+                            <div class="d-grid gap-2">
+                                {% if dhcp_running or tftp_running %}
+                                <button type="submit" name="action" value="stop" 
+                                        class="btn btn-danger">停止所有服务</button>
+                                {% else %}
+                                <button type="submit" name="action" value="start" 
+                                        class="btn btn-success">启动所有服务</button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 文件上传 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">文件管理</div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label">上传配置文件</label>
+                                <input class="form-control" type="file" name="config_file">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">上传镜像文件</label>
+                                <input class="form-control" type="file" name="image_file">
+                            </div>
+                            <button type="submit" class="btn btn-primary">上传文件</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

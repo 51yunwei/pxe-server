@@ -1,0 +1,5 @@
+Flask==2.3.2
+scapy==2.5.0
+tftpy==0.8.2
+SQLAlchemy==2.0.19
+python-dotenv==1.0.0
